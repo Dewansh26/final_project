@@ -1,126 +1,180 @@
-# Chatbot UI
+Here's your `README.md` file:
 
-Chatbot UI is an advanced chatbot kit for OpenAI's chat models built on top of [Chatbot UI Lite](https://github.com/mckaywrigley/chatbot-ui-lite) using Next.js, TypeScript, and Tailwind CSS.
+---
 
-See a [demo](https://twitter.com/mckaywrigley/status/1640380021423603713?s=46&t=AowqkodyK6B4JccSOxSPew).
+# 🚀 Chatbot Deployment with CI/CD
 
-![Chatbot UI](./public/screenshot.png)
+## 📖 Overview
+This project automates the **CI/CD pipeline** for deploying a chatbot application using:
+- **Jenkins** for automation
+- **Terraform** for infrastructure provisioning
+- **Docker** for containerization
+- **Trivy & OWASP Dependency Check** for security scanning
+- **SonarQube** for code quality analysis
+- **AWS & Kubernetes** for cloud deployment
 
-## Updates
+---
 
-Chatbot UI will be updated over time.
+## 🛠️ Technologies Used
+- **Jenkins**: CI/CD automation
+- **Terraform**: Infrastructure as Code (IaC)
+- **Docker**: Containerization
+- **Kubernetes**: Container orchestration
+- **AWS**: Cloud deployment
+- **SonarQube**: Code quality analysis
+- **Trivy**: Security scanning
+- **OWASP Dependency Check**: Vulnerability scanning
+- **Node.js**: Application runtime
 
-Expect frequent improvements.
+---
 
-**Next up:**
+## 📌 CI/CD Pipeline Stages
 
-- [ ] Delete messages
-- [ ] More model settings
-- [ ] Plugins
-
-**Recent updates:**
-
-- [x] Prompt templates (3/27/23)
-- [x] Regenerate & edit responses (3/25/23)
-- [x] Folders (3/24/23)
-- [x] Search chat content (3/23/23)
-- [x] Stop message generation (3/22/23)
-- [x] Import/Export chats (3/22/23)
-- [x] Custom system prompt (3/21/23)
-- [x] Error handling (3/20/23)
-- [x] GPT-4 support (access required) (3/20/23)
-- [x] Search conversations (3/19/23)
-- [x] Code syntax highlighting (3/18/23)
-- [x] Toggle sidebar (3/18/23)
-- [x] Conversation naming (3/18/23)
-- [x] Github flavored markdown (3/18/23)
-- [x] Add OpenAI API key in app (3/18/23)
-- [x] Markdown support (3/17/23)
-
-## Modifications
-
-Modify the chat interface in `components/Chat`.
-
-Modify the sidebar interface in `components/Sidebar`.
-
-Modify the system prompt in `utils/index.ts`.
-
-## Deploy
-
-**Vercel**
-
-Host your own live version of Chatbot UI with Vercel.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmckaywrigley%2Fchatbot-ui)
-
-**Replit**
-
-Fork Chatbot UI on Replit [here](https://replit.com/@MckayWrigley/chatbot-ui-pro?v=1).
-
-**Docker**
-
-Build locally:
-
-```shell
-docker build -t chatgpt-ui .
-docker run -e OPENAI_API_KEY=xxxxxxxx -p 3000:3000 chatgpt-ui
+### 1️⃣ **Checkout from GitHub**
+```groovy
+stage('Checkout from Git') {
+    steps {
+        git branch: 'master', url: 'https://github.com/Dewansh26/final_project.git'
+    }
+}
 ```
 
-Pull from ghcr:
-
+### 2️⃣ **Install Dependencies**
+```groovy
+stage('Install Dependencies') {
+    steps {
+        sh "npm install"
+    }
+}
 ```
-docker run -e OPENAI_API_KEY=xxxxxxxx -p 3000:3000 ghcr.io/mckaywrigley/chatbot-ui:main
+
+### 3️⃣ **SonarQube Code Analysis**
+```groovy
+stage("Sonarqube Analysis") {
+    steps {
+        withSonarQubeEnv('sonar-server') {
+            sh '''
+            $SCANNER_HOME/bin/sonar-scanner \
+            -Dsonar.projectName=Chatbot \
+            -Dsonar.projectKey=Chatbot
+            '''
+        }
+    }
+}
 ```
 
-## Running Locally
+### 4️⃣ **Quality Gate Check**
+```groovy
+stage("Quality Gate") {
+    steps {
+        script {
+            waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
+        }
+    }
+}
+```
 
-**1. Clone Repo**
+### 5️⃣ **Security Scanning (OWASP & Trivy)**
+```groovy
+stage('OWASP FS SCAN') {
+    steps {
+        dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
 
+stage('TRIVY FS SCAN') {
+    steps {
+        sh "trivy fs . > trivyfs.json"
+    }
+}
+```
+
+### 6️⃣ **Docker Build & Push**
+```groovy
+stage("Docker Build & Push") {
+    steps {
+        script {
+            withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                sh "docker build -t chatbot ."
+                sh "docker tag chatbot dewansh26/chatbot:latest"
+                sh "docker push dewansh26/chatbot:latest"
+            }
+        }
+    }
+}
+```
+
+### 7️⃣ **Container Security Scan with Trivy**
+```groovy
+stage("TRIVY Image Scan") {
+    steps {
+        sh "trivy image dewansh26/chatbot:latest > trivy.json"
+    }
+}
+```
+
+### 8️⃣ **Remove Old Container**
+```groovy
+stage("Remove Old Container") {
+    steps {
+        sh "docker stop chatbot || true"
+        sh "docker rm chatbot || true"
+    }
+}
+```
+
+### 9️⃣ **Deploy to Docker Container**
+```groovy
+stage('Deploy to Container') {
+    steps {
+        sh 'docker run -d --name chatbot -p 3000:3000 dewansh26/chatbot:latest'
+    }
+}
+```
+
+---
+
+## ⚙️ Terraform Setup
+
+### **Install Terraform**
 ```bash
-git clone https://github.com/mckaywrigley/chatbot-ui.git
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install terraform -y
 ```
 
-**2. Install Dependencies**
-
+### **Terraform Commands**
 ```bash
-npm i
+terraform init
+terraform validate
+terraform plan
+terraform apply --auto-approve
 ```
 
-**3. Provide OpenAI API Key**
+---
 
-Create a .env.local file in the root of the repo with your OpenAI API Key:
+## 🔍 Troubleshooting
 
+### **Jenkins Not Starting?**
+Check logs:
 ```bash
-OPENAI_API_KEY=YOUR_KEY
+sudo journalctl -u jenkins --since "yesterday"
 ```
-
-> You can set `OPENAI_API_HOST` where access to the official OpenAI host is restricted or unavailable, allowing users to configure an alternative host for their specific needs.
-
-> Additionally, if you have multiple OpenAI Organizations, you can set `OPENAI_ORGANIZATION` to specify one.
-
-**4. Run App**
-
+Fix Java issue:
 ```bash
-npm run dev
+java -version  # Ensure Java 17+ is installed
+```
+Restart Jenkins:
+```bash
+sudo systemctl restart jenkins
 ```
 
-**5. Use It**
+---
 
-You should be able to start chatting.
+## 📌 Author
+**Dewansh26** - DevOps Engineer & Cloud Enthusiast
 
-## Configuration
+---
 
-When deploying the application, the following environment variables can be set:
-
-| Environment Variable  | Default value                  | Description                                             |
-| --------------------- | ------------------------------ | ------------------------------------------------------- |
-| OPENAI_API_KEY        |                                | The default API key used for authentication with OpenAI |
-| DEFAULT_MODEL         | `gpt-3.5-turbo`                | The default model to use on new conversations           |
-| DEFAULT_SYSTEM_PROMPT | [see here](utils/app/const.ts) | The defaut system prompt to use on new conversations    |
-
-If you do not provide an OpenAI API key with `OPENAI_API_KEY`, users will have to provide their own key.
-If you don't have an OpenAI API key, you can get one [here](https://platform.openai.com/account/api-keys).
-
-## Contact
-
-If you have any questions, feel free to reach out to me on [Twitter](https://twitter.com/mckaywrigley).
+This `README.md` should serve as a detailed guide to your project! 🚀 Let me know if you need modifications.
