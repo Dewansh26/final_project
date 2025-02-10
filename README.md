@@ -1,4 +1,3 @@
-Here's your `README.md` file:
 
 ---
 
@@ -173,8 +172,7 @@ sudo systemctl restart jenkins
 ---
 
 ## 📌 Author
-**Dewansh26** - DevOps Engineer & Cloud Enthusiast
+**Dewansh mishra** - DevOps Engineer & Cloud Enthusiast
 
 ---
 
-This `README.md` should serve as a detailed guide to your project! 🚀 Let me know if you need modifications.
